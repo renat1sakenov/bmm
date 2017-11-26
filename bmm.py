@@ -10,6 +10,7 @@ DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
 USER = getpass.getuser()
 DIR = "/home/"+USER+"/.bmm/"
 DB_PATH = DIR + "db"
+con = None
 
 def main():
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
@@ -18,6 +19,8 @@ def main():
 	argument_parser.add_argument('-p',action='store_true',help='print all bookmarks')
 	args = argument_parser.parse_args()
 
+	global con 
+	con = load_db()
 	# read input file
 	if args.input_file != None:
 		try:
@@ -40,15 +43,15 @@ def main():
 		argument_parser.print_help()
 
 
-#return the bookmarks database
 def load_db(): 
-		if not os.path.exists(DIR):
-			os.mkdir(DIR)
-		con = sqlite3.connect(DB_PATH)
-		cursor = con.cursor()
-		''' ... '''
-		con.commit()
-		con.close()
+	if not os.path.exists(DIR):
+		os.mkdir(DIR)
+	con = sqlite3.connect(DB_PATH)
+	c = con.cursor()
+	c.execute('''CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY, folder INT, link VARCHAR(100), added INT, last_modfied INT, FOREIGN KEY(folder) REFERENCES folder(id)) ''')
+	c.execute('''CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))''')
+	con.commit()
+	return con
 
 def write_to_db():
 	pass
@@ -58,11 +61,11 @@ def import_file(ifile):
 	
 def export_file(efile):
 	pass
+	
 
 def print_all():
 	print("print all")
 	print(DIR)
-	load_db()
 
 if __name__ == "__main__":
 	main()
