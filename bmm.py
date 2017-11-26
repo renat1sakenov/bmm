@@ -7,9 +7,13 @@ import os
 from bs4 import BeautifulSoup
 
 DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
+TOPLEVEL = "BMM_TOPLEVEL"
 USER = getpass.getuser()
 DIR = "/home/"+USER+"/.bmm/"
 DB_PATH = DIR + "db"
+#write current item and folders max id into db_index
+INFO_PATH = DIR + "db_index" 	
+c = None
 con = None
 
 def main():
@@ -18,9 +22,9 @@ def main():
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
 	argument_parser.add_argument('-p',action='store_true',help='print all bookmarks')
 	args = argument_parser.parse_args()
-
-	global con 
-	con = load_db()
+	
+	global con,c
+	(con,c) = load_db()
 	# read input file
 	if args.input_file != None:
 		try:
@@ -35,7 +39,7 @@ def main():
 			return
 	# export file
 	elif args.output_file != None:
-		pass
+		export_file(args.output_file)
 	# print bookmarks
 	elif args.p:
 		print_all()
@@ -48,16 +52,35 @@ def load_db():
 		os.mkdir(DIR)
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
-	c.execute('''CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY, folder INT, link VARCHAR(100), added INT, last_modfied INT, FOREIGN KEY(folder) REFERENCES folder(id)) ''')
-	c.execute('''CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))''')
+	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modfied INT, description VARCHAR(1000), FOREIGN KEY(folder) REFERENCES folder(id)) ')
+	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))')
+	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
+	if c.fetchone() == None:
+		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\")')
+		
 	con.commit()
-	return con
+	return (con,c)
 
 def write_to_db():
 	pass
 
 def import_file(ifile):
+	
+	#test
+	c.execute('SELECT * FROM folder')
+	print(c.fetchall())
+	#testend
+
 	bs = BeautifulSoup(ifile,'html.parser')
+	list_folders = bs.find_all('h3')
+	#go through all subfolders 
+	for elem in list_folders:
+		n = elem.get_text()
+		c.execute('SELECT name FROM folder WHERE name = \"'+n+'\"')
+		#if the subfolder does not exist, create it in db
+		if c.fetchone() == None:
+			c.execute('INSERT INTO folder (name) VALUES (\"'+n+'\")')  
+			con.commit()
 	
 def export_file(efile):
 	pass
