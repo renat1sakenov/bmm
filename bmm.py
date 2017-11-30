@@ -9,23 +9,6 @@ from bs4 import BeautifulSoup
 def write_to_db():
 	pass
 
-def import_file(ifile):
-	
-	#test
-	c.execute('SELECT * FROM folder')
-	print(c.fetchall())
-	#testend
-
-	bs = BeautifulSoup(ifile,'html.parser')
-	list_folders = bs.find_all('h3')
-	#go through all subfolders 
-	for elem in list_folders:
-		n = elem.get_text()
-		c.execute('SELECT name FROM folder WHERE name = \"'+n+'\"')
-		#if the subfolder does not exist, create it in db
-		if c.fetchone() == None:
-			c.execute('INSERT INTO folder (name) VALUES (\"'+n+'\")')  
-			con.commit()
 	
 def export_file(efile):
 	pass
@@ -45,6 +28,9 @@ if __name__ == "__main__":
 	INFO_PATH = DIR + "db_index" 	
 	c = None
 	con = None
+	info_file = None
+	item_id = 0
+	folder_id = 1
 
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
@@ -54,15 +40,23 @@ if __name__ == "__main__":
 
 	if not os.path.exists(DIR):
 		os.mkdir(DIR)
+
+	info_file = open(INFO_PATH,"w+")
+	info_content = info_file.readlines()
+	if len(info_content) != 0:
+		item_id = int(info_content[0])
+		folder_id = int(info_content[1])
+
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
 	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modfied INT, description VARCHAR(1000), FOREIGN KEY(folder) REFERENCES folder(id)) ')
 	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))')
 	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
 	if c.fetchone() == None:
-		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\")')
-		
+		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\")')		
 	con.commit()
+
+
 	# read input file
 	if args.input_file != None:
 		try:
@@ -71,7 +65,23 @@ if __name__ == "__main__":
 			print("File '" + args.input_file +"' not found!")
 			sys.exit()
 		if bookmarkfile.readline() == DOCTYPE:
-			import_file(bookmarkfile)
+			#import_file	
+			#test
+			c.execute('SELECT * FROM folder')
+			print(c.fetchall())
+			#testend
+		
+			bs = BeautifulSoup(bookmarkfile,'html.parser')
+			list_folders = bs.find_all('h3')
+			#go through all subfolders 
+			for elem in list_folders:
+				n = elem.get_text()
+				c.execute('SELECT name FROM folder WHERE name = \"'+n+'\"')
+				#if the subfolder does not exist, create it in db
+				if c.fetchone() == None:
+					c.execute('INSERT INTO folder (id,name) VALUES ('+str(folder_id)+',\"'+n+'\")')  
+					folder_id+=1	
+				con.commit()
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
