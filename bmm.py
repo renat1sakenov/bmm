@@ -18,6 +18,16 @@ def print_all():
 	print("print all")
 	print(DIR)
 
+def traverse(node,i,l):
+	try:
+		for child in node.children:
+			if child.name == FOLDER_TAG:
+				l.append((child.get_text(),i))
+			traverse(child,i+1,l)
+	except:
+		pass
+	
+
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
 	TOPLEVEL = "BMM_TOPLEVEL"
@@ -31,6 +41,9 @@ if __name__ == "__main__":
 	info_file = None
 	item_id = 0
 	folder_id = 1
+
+	FOLDER_TAG = "h3"
+	FOLDER_BODY = "dl"
 
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
@@ -66,12 +79,24 @@ if __name__ == "__main__":
 			sys.exit()
 		if bookmarkfile.readline() == DOCTYPE:
 			#import_file	
-			#test
+			'''
+			test
 			c.execute('SELECT * FROM folder')
 			print(c.fetchall())
-			#testend
-		
+			testend
+			'''
 			bs = BeautifulSoup(bookmarkfile,'html.parser')
+
+			content = bs.find(FOLDER_BODY)
+			l = [(TOPLEVEL,0)]
+		
+			for child in bs.recursiveChildGenerator():
+				if child.name == FOLDER_TAG:
+					print(child.get_text())
+				
+	
+
+			'''
 			list_folders = bs.find_all('h3')
 			#go through all subfolders 
 			for elem in list_folders:
@@ -82,6 +107,12 @@ if __name__ == "__main__":
 					c.execute('INSERT INTO folder (id,name) VALUES ('+str(folder_id)+',\"'+n+'\")')  
 					folder_id+=1	
 				con.commit()
+				#get items from this folder
+			
+			list_items = bs.find_all('dl')
+			for items in list_items:
+				print(items)
+			'''			
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
