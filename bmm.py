@@ -18,15 +18,6 @@ def print_all():
 	print("print all")
 	print(DIR)
 
-def traverse(node,i,l):
-	try:
-		for child in node.children:
-			if child.name == FOLDER_TAG:
-				l.append((child.get_text(),i))
-			traverse(child,i+1,l)
-	except:
-		pass
-	
 
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
@@ -42,8 +33,11 @@ if __name__ == "__main__":
 	item_id = 0
 	folder_id = 1
 
-	FOLDER_TAG = "h3"
+	FOLDER_TAG = "dt"
+	H3_TAG = "h3"
 	FOLDER_BODY = "dl"
+	DOC_TAG = "[document]"
+	to_remove_tags = ['<dd>']
 
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
@@ -79,40 +73,26 @@ if __name__ == "__main__":
 			sys.exit()
 		if bookmarkfile.readline() == DOCTYPE:
 			#import_file	
-			'''
-			test
-			c.execute('SELECT * FROM folder')
-			print(c.fetchall())
-			testend
-			'''
+
 			bs = BeautifulSoup(bookmarkfile,'html.parser')
+			bs = str(bs)
+			for elem in to_remove_tags:
+				bs = bs.replace(elem,"")
+			bs = BeautifulSoup(bs,'html.parser')
+			content = bs.find(FOLDER_BODY).descendants
 
-			content = bs.find(FOLDER_BODY)
-			l = [(TOPLEVEL,0)]
-		
-			for child in bs.recursiveChildGenerator():
-				if child.name == FOLDER_TAG:
-					print(child.get_text())
-				
-	
-
-			'''
-			list_folders = bs.find_all('h3')
-			#go through all subfolders 
-			for elem in list_folders:
-				n = elem.get_text()
-				c.execute('SELECT name FROM folder WHERE name = \"'+n+'\"')
-				#if the subfolder does not exist, create it in db
-				if c.fetchone() == None:
-					c.execute('INSERT INTO folder (id,name) VALUES ('+str(folder_id)+',\"'+n+'\")')  
-					folder_id+=1	
-				con.commit()
-				#get items from this folder
-			
-			list_items = bs.find_all('dl')
-			for items in list_items:
-				print(items)
-			'''			
+			l = []
+			for x in content:
+				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
+					s = ""
+					p = x.parent
+					s += x.find_previous_sibling().get_text()
+					while p.name != DOC_TAG:
+						if p.name == FOLDER_BODY and p.find_previous_sibling(H3_TAG) != None:
+							s =  p.find_previous_sibling(H3_TAG).get_text() +"/"+s
+						p = p.parent	
+					l.append(s)
+			print(l)	#l containing all folders in hierarchy
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
