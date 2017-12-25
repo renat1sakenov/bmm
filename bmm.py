@@ -37,7 +37,9 @@ if __name__ == "__main__":
 	H3_TAG = "h3"
 	FOLDER_BODY = "dl"
 	DOC_TAG = "[document]"
+	SEP = "_._"
 	to_remove_tags = ['<dd>']
+
 
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
@@ -80,8 +82,8 @@ if __name__ == "__main__":
 				bs = bs.replace(elem,"")
 			bs = BeautifulSoup(bs,'html.parser')
 			content = bs.find(FOLDER_BODY).descendants
-
-			l = []
+	
+			#l = []
 			for x in content:
 				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
 					s = ""
@@ -89,10 +91,21 @@ if __name__ == "__main__":
 					s += x.find_previous_sibling().get_text()
 					while p.name != DOC_TAG:
 						if p.name == FOLDER_BODY and p.find_previous_sibling(H3_TAG) != None:
-							s =  p.find_previous_sibling(H3_TAG).get_text() +"/"+s
+							s =  p.find_previous_sibling(H3_TAG).get_text() +SEP+s
 						p = p.parent	
-					l.append(s)
-			print(l)	#l containing all folders in hierarchy
+					#l.append(s)
+					c.execute('INSERT INTO folder VALUES ('+str(folder_id)+',"'+s+'")')
+					folder_id += 1
+			con.commit()
+
+			#c.execute('SELECT * FROM folder')
+			#r = c.fetchall()
+			#for row in r:
+			#	print(row)
+			#print(l)	#l containing all folders in hierarchy
+
+
+			#write to db_index
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
