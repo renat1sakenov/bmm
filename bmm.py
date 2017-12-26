@@ -6,8 +6,6 @@ import getpass
 import os
 from bs4 import BeautifulSoup
 
-def write_to_db():
-	pass
 
 	
 def export_file(efile):
@@ -16,8 +14,16 @@ def export_file(efile):
 
 def print_all():
 	print("print all")
-	print(DIR)
+	c.execute("SELECT * FROM folder")
+	r = c.fetchall()
+	for line in r:
+		print(line)
 
+	print("------------------------")
+	c.execute("SELECT * FROM item")
+	r = c.fetchall()
+	for line in r:
+		print(line)	
 
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
@@ -36,6 +42,7 @@ if __name__ == "__main__":
 	FOLDER_TAG = "dt"
 	H3_TAG = "h3"
 	FOLDER_BODY = "dl"
+	LINK_TAG = "a"
 	DOC_TAG = "[document]"
 	SEP = "_._"
 	to_remove_tags = ['<dd>']
@@ -58,7 +65,7 @@ if __name__ == "__main__":
 
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
-	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modfied INT, description VARCHAR(1000), FOREIGN KEY(folder) REFERENCES folder(id)) ')
+	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modfied INT, title VARCHAR(100), FOREIGN KEY(folder) REFERENCES folder(id)) ')
 	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))')
 	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
 	if c.fetchone() == None:
@@ -75,37 +82,64 @@ if __name__ == "__main__":
 			sys.exit()
 		if bookmarkfile.readline() == DOCTYPE:
 			#import_file	
+			
+
+			c.execute('SELECT name FROM folder')
+			folder_res = str(c.fetchall())
+
 
 			bs = BeautifulSoup(bookmarkfile,'html.parser')
 			bs = str(bs)
 			for elem in to_remove_tags:
 				bs = bs.replace(elem,"")
 			bs = BeautifulSoup(bs,'html.parser')
-			content = bs.find(FOLDER_BODY).descendants
+			folders = bs.find(FOLDER_BODY).descendants
 	
-			#l = []
-			for x in content:
+			folder_list = {}
+			for x in folders:
 				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
 					s = ""
 					p = x.parent
-					s += x.find_previous_sibling().get_text()
+					fname = x.find_previous_sibling().get_text()
+					s += fname
 					while p.name != DOC_TAG:
 						if p.name == FOLDER_BODY and p.find_previous_sibling(H3_TAG) != None:
 							s =  p.find_previous_sibling(H3_TAG).get_text() +SEP+s
 						p = p.parent	
-					#l.append(s)
-					c.execute('INSERT INTO folder VALUES ('+str(folder_id)+',"'+s+'")')
-					folder_id += 1
+					if "('"+s+"',)" not in folder_res:
+						folder_list[fname] = folder_id
+						c.execute('INSERT INTO folder VALUES ('+str(folder_id)+',"'+s+'")')
+						folder_id += 1
+					else:
+						c.execute('SELECT id FROM folder WHERE name="'+s+'"')
+						folder_list[fname] = int(c.fetchone()[0])
 			con.commit()
+			folder_res = None
 
-			#c.execute('SELECT * FROM folder')
-			#r = c.fetchall()
-			#for row in r:
-			#	print(row)
-			#print(l)	#l containing all folders in hierarchy
+			c.execute('SELECT link FROM item')
+			link_res = str(c.fetchall())
+
+			links = bs.find_all(LINK_TAG)
+			for x in links:
+				if "('"+x['href']+"',)" not in link_res and "place:folder" not in x['href']: #testing for now
+					folder_fk = 0	
+					p = x.parent
+					while p.find_previous_sibling(H3_TAG) == None and  p.name != DOC_TAG:	#wrong: does not find correct parent	
+						p = p.parent
+					if p.name != DOC_TAG:		
+						folder_fk = folder_list[p.find_previous_sibling(H3_TAG).get_text()]
+					
+					print(str(item_id) + " " + str(folder_fk) + " " + x['href'] + " " + x['add_date'] + " " + x['last_modified'] + " " + x.get_text())
+					c.execute('INSERT INTO item VALUES ('+str(item_id)+','+str(folder_fk)+',"'+x['href']+'",'+x['add_date']+','+x['last_modified']+',"'+x.get_text()+'")')
+					item_id += 1
+			con.commit()
+					
+			
+			
 
 
-			#write to db_index
+			#todo: write to db_index
+			
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
