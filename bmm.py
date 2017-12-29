@@ -6,11 +6,9 @@ import getpass
 import os
 from bs4 import BeautifulSoup
 
-
 	
 def export_file(efile):
 	pass
-	
 
 def print_all():
 	print("print all")
@@ -47,7 +45,6 @@ if __name__ == "__main__":
 	SEP = "_._"
 	to_remove_tags = ['<dd>']
 
-
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
@@ -57,11 +54,13 @@ if __name__ == "__main__":
 	if not os.path.exists(DIR):
 		os.mkdir(DIR)
 
-	info_file = open(INFO_PATH,"w+")
+	info_file = open(INFO_PATH,"r")
 	info_content = info_file.readlines()
 	if len(info_content) != 0:
 		item_id = int(info_content[0])
 		folder_id = int(info_content[1])
+	info_file.close
+	info_file = open(INFO_PATH,"w+")
 
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
@@ -71,7 +70,6 @@ if __name__ == "__main__":
 	if c.fetchone() == None:
 		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\")')		
 	con.commit()
-
 
 	# read input file
 	if args.input_file != None:
@@ -105,7 +103,7 @@ if __name__ == "__main__":
 						p = p.parent	
 					if "('"+s+"',)" not in folder_res:
 						folder_list[fname] = folder_id
-						c.execute('INSERT INTO folder VALUES ('+str(folder_id)+',"'+s+'")')
+						c.execute('INSERT INTO folder VALUES (?,?)',(str(folder_id),s))
 						folder_id += 1
 					else:
 						c.execute('SELECT id FROM folder WHERE name="'+s+'"')
@@ -125,7 +123,18 @@ if __name__ == "__main__":
 						p = p.parent
 					if p.name != DOC_TAG:		
 						folder_fk = folder_list[p.find_previous_sibling(H3_TAG).get_text()]
-					c.execute('INSERT INTO item VALUES ('+str(item_id)+','+str(folder_fk)+',"'+x['href']+'",'+ x['add_date']+','+x['last_modified']+',"'+x.get_text()+'")')
+					
+					try:
+						lm = x['last_modified']
+					except:
+						lm = 0
+					try:	
+						ad = x['add_date']
+					except:
+						ad = 0
+					txt = x.get_text().replace('"','\"')
+					print(txt)
+					c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(folder_fk),x['href'],str(ad),str(lm),txt))
 					item_id += 1
 			con.commit()
 					
