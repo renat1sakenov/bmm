@@ -81,12 +81,9 @@ if __name__ == "__main__":
 			print("File '" + args.input_file +"' not found!")
 			sys.exit()
 		if bookmarkfile.readline() == DOCTYPE:
-			#import_file	
 			
-
 			c.execute('SELECT name FROM folder')
 			folder_res = str(c.fetchall())
-
 
 			bs = BeautifulSoup(bookmarkfile,'html.parser')
 			bs = str(bs)
@@ -94,7 +91,7 @@ if __name__ == "__main__":
 				bs = bs.replace(elem,"")
 			bs = BeautifulSoup(bs,'html.parser')
 			folders = bs.find(FOLDER_BODY).descendants
-	
+
 			folder_list = {}
 			for x in folders:
 				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
@@ -124,22 +121,16 @@ if __name__ == "__main__":
 				if "('"+x['href']+"',)" not in link_res and "place:folder" not in x['href']: #testing for now
 					folder_fk = 0	
 					p = x.parent
-					while p.find_previous_sibling(H3_TAG) == None and  p.name != DOC_TAG:	#wrong: does not find correct parent	
+					while p.name != FOLDER_BODY  and p.name != DOC_TAG:	
 						p = p.parent
 					if p.name != DOC_TAG:		
 						folder_fk = folder_list[p.find_previous_sibling(H3_TAG).get_text()]
-					
-					print(str(item_id) + " " + str(folder_fk) + " " + x['href'] + " " + x['add_date'] + " " + x['last_modified'] + " " + x.get_text())
-					c.execute('INSERT INTO item VALUES ('+str(item_id)+','+str(folder_fk)+',"'+x['href']+'",'+x['add_date']+','+x['last_modified']+',"'+x.get_text()+'")')
+					c.execute('INSERT INTO item VALUES ('+str(item_id)+','+str(folder_fk)+',"'+x['href']+'",'+ x['add_date']+','+x['last_modified']+',"'+x.get_text()+'")')
 					item_id += 1
 			con.commit()
 					
-			
-			
-
-
-			#todo: write to db_index
-			
+			info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
+			info_file.close()
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
