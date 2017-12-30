@@ -6,9 +6,48 @@ import getpass
 import os
 from bs4 import BeautifulSoup
 
+
+def export(efile):
+	def new_folder(name):
+		return '<DT><H3>'+name+'</H3>\n<DL><p>\n'
+
+	def new_item(link,ad,lm,title):
+		return '<DT><A HREF="'+link+'" ADD_DATE='+str(ad)+' LAST_MODIFIED='+str(lm)+'>'+title+'</A>\n'
+
+	close_folder = "</DL><p>\n"
+
+	try:
+		export_file = open(efile,"w+")
+	except:
+		print("No such directory")
+		sys.exit()	
 	
-def export_file(efile):
-	pass
+	header = """<!DOCTYPE NETSCAPE-Bookmark-file-1>\r
+		<!-- This is an automatically generated file.\r
+		It will be read and overwritten.\r
+		DO NOT EDIT! -->\r
+		<META HTTP-EQUIV=\"Content-Type\"
+		CONTENT=\"text/html; charset=UTF-8\">\r
+		<TITLE>Bookmarks</TITLE>\r
+		<H1>Bookmarks</H1>\r
+		<DL><p>\r"""
+	content = ""	
+	
+	counter = 0
+	while counter < folder_id:	
+		c.execute("SELECT folder.name,link,added,last_modified,title   FROM item, folder WHERE folder.id = item.folder AND folder.id=?",(str(counter)))
+		r = c.fetchall()
+		if counter != 0: 
+			content += new_folder(r[0][0].split(SEP)[-1])
+		for line in r:
+			content += new_item(line[1],line[2],line[3],line[4])
+		if counter != 0 and len(r[0][0].split(SEP)) > 1:
+			content += close_folder
+		counter+=1
+	content += "</DL>"
+	export_file.write(header+content)
+	export_file.close()
+
 
 def print_all():
 	print("print all")
@@ -53,18 +92,20 @@ if __name__ == "__main__":
 
 	if not os.path.exists(DIR):
 		os.mkdir(DIR)
+	try:
+		info_file = open(INFO_PATH,"r")
+		info_content = info_file.readlines()
+		if len(info_content) != 0:
+			item_id = int(info_content[0])
+			folder_id = int(info_content[1])
+		info_file.close()
+	except:
+		print("creating new db_index")
 
-	info_file = open(INFO_PATH,"r")
-	info_content = info_file.readlines()
-	if len(info_content) != 0:
-		item_id = int(info_content[0])
-		folder_id = int(info_content[1])
-	info_file.close
-	info_file = open(INFO_PATH,"w+")
 
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
-	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modfied INT, title VARCHAR(100), FOREIGN KEY(folder) REFERENCES folder(id)) ')
+	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modified INT, title VARCHAR(100), FOREIGN KEY(folder) REFERENCES folder(id)) ')
 	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))')
 	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
 	if c.fetchone() == None:
@@ -127,17 +168,18 @@ if __name__ == "__main__":
 					try:
 						lm = x['last_modified']
 					except:
-						lm = 0
+						lm = -1
 					try:	
 						ad = x['add_date']
 					except:
-						ad = 0
+						ad = -1
 					txt = x.get_text().replace('"','\"')
 					print(txt)
 					c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(folder_fk),x['href'],str(ad),str(lm),txt))
 					item_id += 1
 			con.commit()
-					
+				
+			info_file = open(INFO_PATH,"w+")
 			info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
 			info_file.close()
 		else:
@@ -145,7 +187,9 @@ if __name__ == "__main__":
 			sys.exit()
 	# export file
 	elif args.output_file != None:
-		export_file(args.output_file)
+		export(args.output_file) 
+	
+	
 	# print bookmarks
 	elif args.p:
 		print_all()
