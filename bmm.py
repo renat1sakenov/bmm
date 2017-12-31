@@ -37,8 +37,15 @@ def export(efile):
 	cs = (TOPLEVEL,0)
 	old_cs = (TOPLEVEL,0)
 	while counter < folder_id:	
-		c.execute("SELECT folder.name,link,added,last_modified,title   FROM item, folder WHERE folder.id = item.folder AND folder.id=?",(str(counter)))
+		empty = False
+		c.execute("SELECT folder.name,link,added,last_modified,title   FROM item, folder WHERE folder.id = item.folder AND folder.id="+str(counter))
 		r = c.fetchall()
+		
+		if len(r) == 0:
+			c.execute("SELECT folder.name FROM folder WHERE folder.id ="+str(counter))
+			r = c.fetchall()
+			empty = True	
+		
 		try:
 			cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
 		except:
@@ -46,13 +53,14 @@ def export(efile):
 		#if one folder has finished (but the same superfolder continues), add closing tags.
 		if cs[1] < old_cs[1]:
 			content += close_folder
-		#if one folder has finished, and another different folder continues (superfolder has closed), add closing tags aswell.
-		if cs[0] != old_cs[0] and cs[1] < old_cs[1]:
-			content += close_folder
+			#if one folder has finished, and another different folder continues (superfolder has closed), add closing tags aswell.
+			if cs[0] != old_cs[0]:
+				content += close_folder
 		if counter != 0: 
 			content += new_folder(r[0][0].split(SEP)[-1])
-		for line in r:
-			content += new_item(line[1],line[2],line[3],line[4])
+		if not empty:
+			for line in r:
+				content += new_item(line[1],line[2],line[3],line[4])
 		old_cs = cs
 		counter+=1
 	i = old_cs[1]
