@@ -34,16 +34,31 @@ def export(efile):
 	content = ""	
 	
 	counter = 0
+	cs = (TOPLEVEL,0)
+	old_cs = (TOPLEVEL,0)
 	while counter < folder_id:	
 		c.execute("SELECT folder.name,link,added,last_modified,title   FROM item, folder WHERE folder.id = item.folder AND folder.id=?",(str(counter)))
 		r = c.fetchall()
+		try:
+			cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
+		except:
+			pass
+		#if one folder has finished (but the same superfolder continues), add closing tags.
+		if cs[1] < old_cs[1]:
+			content += close_folder
+		#if one folder has finished, and another different folder continues (superfolder has closed), add closing tags aswell.
+		if cs[0] != old_cs[0] and cs[1] < old_cs[1]:
+			content += close_folder
 		if counter != 0: 
 			content += new_folder(r[0][0].split(SEP)[-1])
 		for line in r:
 			content += new_item(line[1],line[2],line[3],line[4])
-		if counter != 0 and len(r[0][0].split(SEP)) > 1:
-			content += close_folder
+		old_cs = cs
 		counter+=1
+	i = old_cs[1]
+	while i > 0:
+		content += close_folder
+		i-=1
 	content += "</DL>"
 	export_file.write(header+content)
 	export_file.close()
@@ -142,6 +157,7 @@ if __name__ == "__main__":
 						if p.name == FOLDER_BODY and p.find_previous_sibling(H3_TAG) != None:
 							s =  p.find_previous_sibling(H3_TAG).get_text() +SEP+s
 						p = p.parent	
+					s = TOPLEVEL+SEP+s
 					if "('"+s+"',)" not in folder_res:
 						folder_list[fname] = folder_id
 						c.execute('INSERT INTO folder VALUES (?,?)',(str(folder_id),s))
