@@ -12,7 +12,7 @@ def export(efile):
 		return '<DT><H3>'+name+'</H3>\n<DL><p>\n'
 
 	def new_item(link,ad,lm,title):
-		return '<DT><A HREF="'+link+'" ADD_DATE='+str(ad)+' LAST_MODIFIED='+str(lm)+'>'+title+'</A>\n'
+		return '<DT><A HREF="'+link+'" ADD_DATE="'+str(ad)+'" LAST_MODIFIED="'+str(lm)+'">'+title+'</A>\n'
 
 	close_folder = "</DL><p>\n"
 
@@ -45,17 +45,13 @@ def export(efile):
 			c.execute("SELECT folder.name FROM folder WHERE folder.id ="+str(counter))
 			r = c.fetchall()
 			empty = True	
-		
-		try:
-			cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
-		except:
-			pass
+		cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
 		#if one folder has finished (but the same superfolder continues), add closing tags.
-		if cs[1] < old_cs[1]:
+		if int(cs[1]) < int(old_cs[1]):
 			content += close_folder
-			#if one folder has finished, and another different folder continues (superfolder has closed), add closing tags aswell.
-			if cs[0] != old_cs[0]:
-				content += close_folder
+		#if one folder has finished, and another different folder continues (superfolder has closed), add closing tags aswell.
+		if int(cs[1]) <= int(old_cs[1]) and cs[0] != old_cs[0]:
+			content += close_folder
 		if counter != 0: 
 			content += new_folder(r[0][0].split(SEP)[-1])
 		if not empty:
@@ -123,7 +119,7 @@ if __name__ == "__main__":
 			folder_id = int(info_content[1])
 		info_file.close()
 	except:
-		print("creating new db_index")
+		pass	
 
 
 	con = sqlite3.connect(DB_PATH)
@@ -198,7 +194,6 @@ if __name__ == "__main__":
 					except:
 						ad = -1
 					txt = x.get_text().replace('"','\"')
-					print(txt)
 					c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(folder_fk),x['href'],str(ad),str(lm),txt))
 					item_id += 1
 			con.commit()
