@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup
 
 
 def export(efile):
-	def new_folder(name):
-		return '<DT><H3>'+name+'</H3>\n<DL><p>\n'
+	def new_folder(name,toolbar=0):
+		return ('<DT><H3>'+name+'</H3>\n<DL><p>\n' if (toolbar == 0) else '<DT><H3 PERSONAL_TOOLBAR_FOLDER=\"true\">'+name+'</H3>\n<DL><p>\n')
 
 	def new_item(link,ad,lm,title):
 		return '<DT><A HREF="'+link+'" ADD_DATE="'+str(ad)+'" LAST_MODIFIED="'+str(lm)+'">'+title+'</A>\n'
@@ -38,11 +38,11 @@ def export(efile):
 	old_cs = (TOPLEVEL,0)
 	while counter < folder_id:	
 		empty = False
-		c.execute("SELECT folder.name,link,added,last_modified,title   FROM item, folder WHERE folder.id = item.folder AND folder.id="+str(counter))
+		c.execute("SELECT folder.name,link,added,last_modified,title,toolbar FROM item,folder WHERE folder.id = item.folder AND folder.id="+str(counter))
 		r = c.fetchall()
 		
 		if len(r) == 0:
-			c.execute("SELECT folder.name FROM folder WHERE folder.id ="+str(counter))
+			c.execute("SELECT folder.name,toolbar FROM folder WHERE folder.id ="+str(counter))
 			r = c.fetchall()
 			empty = True	
 		cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
@@ -53,7 +53,7 @@ def export(efile):
 		if int(cs[1]) <= int(old_cs[1]) and cs[0] != old_cs[0]:
 			content += close_folder
 		if counter != 0: 
-			content += new_folder(r[0][0].split(SEP)[-1])
+			content += new_folder(cs[0],int(r[0][-1]))
 		if not empty:
 			for line in r:
 				content += new_item(line[1],line[2],line[3],line[4])
@@ -103,6 +103,10 @@ if __name__ == "__main__":
 	SEP = "_._"
 	to_remove_tags = ['<dd>']
 
+	TOOLBAR = "personal_toolbar_folder"
+	LASTMOD = "last_modified"
+	ADDDATE = "add_date"	
+
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
@@ -125,10 +129,10 @@ if __name__ == "__main__":
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
 	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modified INT, title VARCHAR(100), FOREIGN KEY(folder) REFERENCES folder(id)) ')
-	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100))')
+	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100), toolbar INT)')
 	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
 	if c.fetchone() == None:
-		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\")')		
+		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\",0)')		
 	con.commit()
 
 	# read input file
@@ -155,7 +159,10 @@ if __name__ == "__main__":
 				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
 					s = ""
 					p = x.parent
+					tb = 0
 					fname = x.find_previous_sibling().get_text()
+					if x.find_previous_sibling().has_attr(TOOLBAR):
+						tb  = 1
 					s += fname
 					while p.name != DOC_TAG:
 						if p.name == FOLDER_BODY and p.find_previous_sibling(H3_TAG) != None:
@@ -164,7 +171,7 @@ if __name__ == "__main__":
 					s = TOPLEVEL+SEP+s
 					if "('"+s+"',)" not in folder_res:
 						folder_list[fname] = folder_id
-						c.execute('INSERT INTO folder VALUES (?,?)',(str(folder_id),s))
+						c.execute('INSERT INTO folder VALUES (?,?,?)',(str(folder_id),s,tb))
 						folder_id += 1
 					else:
 						c.execute('SELECT id FROM folder WHERE name="'+s+'"')
@@ -180,19 +187,15 @@ if __name__ == "__main__":
 				if "('"+x['href']+"',)" not in link_res and "place:folder" not in x['href']: #testing for now
 					folder_fk = 0	
 					p = x.parent
+					lm = ad = -1
 					while p.name != FOLDER_BODY  and p.name != DOC_TAG:	
 						p = p.parent
 					if p.name != DOC_TAG:		
 						folder_fk = folder_list[p.find_previous_sibling(H3_TAG).get_text()]
-					
-					try:
-						lm = x['last_modified']
-					except:
-						lm = -1
-					try:	
-						ad = x['add_date']
-					except:
-						ad = -1
+					if x.has_attr(LASTMOD):
+						lm = x[LASTMOD]
+					if x.has_attr(ADDDATE):
+						ad = x[ADDDATE]
 					txt = x.get_text().replace('"','\"')
 					c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(folder_fk),x['href'],str(ad),str(lm),txt))
 					item_id += 1
