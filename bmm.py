@@ -111,6 +111,7 @@ if __name__ == "__main__":
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
 	argument_parser.add_argument('-p',action='store_true',help='print all bookmarks')
+	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -210,10 +211,15 @@ if __name__ == "__main__":
 	# export file
 	elif args.output_file != None:
 		export(args.output_file) 
-	
-	
 	# print bookmarks
 	elif args.p:
 		print_all()
+	elif args.D:
+		try:
+			os.remove(DB_PATH)
+			os.remove(INFO_PATH)
+			print("all bookmarks removed")
+		except OSError as err:
+			print(err)
 	else:
 		argument_parser.print_help()
