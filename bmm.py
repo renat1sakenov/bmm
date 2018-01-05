@@ -153,8 +153,13 @@ if __name__ == "__main__":
 			for elem in to_remove_tags:
 				bs = bs.replace(elem,"")
 			bs = BeautifulSoup(bs,'html.parser')
-			folders = bs.find(FOLDER_BODY).descendants
-
+	
+			try:
+				folders = bs.find(FOLDER_BODY).descendants
+			except:
+				print("Invalid or empty file")
+				sys.exit() 
+		
 			folder_list = {}
 			for x in folders:
 				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
