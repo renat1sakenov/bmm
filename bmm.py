@@ -69,7 +69,24 @@ def export(efile):
 	export_file.close()
 
 
-def print_bm(search = None):
+def searchterm_result(search = None):
+	if not search: 
+		c.execute(DEFAULT_ITEM_QUERY)
+	else: 
+		c.execute(DEFAULT_ITEM_QUERY + " AND (title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder.name LIKE '%"+search+"%')")
+	r = c.fetchall()
+	return r
+
+def query_result(query):
+	if not query:
+		return None
+	else:
+		c.execute(DEFAULT_ITEM_QUERY + query)
+	r = c.fetchall()
+	return r
+	
+
+def print_result(r):
 
 	def gs(l1,l2):
 		return ''.join((1+l1-l2)*[" "])
@@ -78,18 +95,11 @@ def print_bm(search = None):
 		if val == -1:
 			return "NaN"
 		return time.strftime('%Y-%m-%d %H:%M',time.gmtime(val))
-	query = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder"
-	if not search: 
-		c.execute(query)
-	else: 
-		c.execute(query + " AND (title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder.name LIKE '%"+search+"%')")
-	r = c.fetchall()
 
 	if len(r) == 0:
 		print("No bookmarks found.")
 		return
 
-	print("print bookmarks")
 	maxLen = [0,0,0]
 	for line in r:
 		for i in range(1,4):
@@ -105,6 +115,30 @@ def print_bm(search = None):
 		folder = folder.replace(TOPLEVEL+"/","")
 		print(str(line[0]) + gs(4,0) + folder + gs(maxLen[0],len(folder)) + line[2] + gs(maxLen[1],len(line[2]))+ line[3] + gs(maxLen[2],len(line[3]))+ gtime(line[4]) + gs(4,0) + gtime(line[5]))
 
+
+
+def delete_folder(name):
+	name = name.replace("/",SEP)
+	real_name = TOPLEVEL+SEP+name
+	r = query_result("AND folder.name = '"+real_name+"'")
+	if r == None or len(r) == 0:
+		print("No folder found.")
+		return
+	print_result(r)
+	while True:
+		answer = input("Are you sure you want to delete these items? (y/n) ")
+		if answer == 'y':
+			c.execute("DELETE FROM item WHERE item.folder IN (SELECT folder.id FROM folder WHERE name = '"+real_name+"%')")
+			c.execute("DELETE FROM folder WHERE name = '"+real_name+"'")
+			con.commit()		
+			print("bookmarks deleted")
+			return
+		elif answer == 'n':
+			return
+			
+
+def delete(search):
+	pass
 
 
 if __name__ == "__main__":
@@ -133,11 +167,15 @@ if __name__ == "__main__":
 	LASTMOD = "last_modified"
 	ADDDATE = "add_date"	
 
+
+	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
+
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
 	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='search term',nargs='?',const='*',help='print bookmarks')
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
+	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='search term',nargs='+',help='delete bookmarks')
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -245,9 +283,9 @@ if __name__ == "__main__":
 	# print bookmarks
 	elif args.print_param != None:
 		if args.print_param == '*':
-			print_bm()
+			print_result(searchterm_result())
 		else:
-			print_bm(args.print_param)	
+			print_result(searchterm_result(args.print_param))	
 	elif args.D:
 		try:
 			os.remove(DB_PATH)
@@ -255,5 +293,12 @@ if __name__ == "__main__":
 			print("all bookmarks removed")
 		except OSError as err:
 			print(err)
+	elif args.delete_param != None:
+		if args.delete_param[0] == "folder" and len(args.delete_param) == 2:
+			delete_folder(args.delete_param[1])
+		elif len(args.delete_param) == 1:
+			delete(args.delete_param[0])	
+		else:
+			print("wrong number of arguments applied")
 	else:
 		argument_parser.print_help()
