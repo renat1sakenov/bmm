@@ -4,6 +4,7 @@ import argparse
 import sqlite3
 import getpass
 import os
+import time
 from bs4 import BeautifulSoup
 
 
@@ -69,17 +70,38 @@ def export(efile):
 
 
 def print_all():
-	print("print all")
-	c.execute("SELECT * FROM folder")
-	r = c.fetchall()
-	for line in r:
-		print(line)
 
-	print("------------------------")
-	c.execute("SELECT * FROM item")
+	def gs(l1,l2):
+		return ''.join((1+l1-l2)*[" "])
+
+	def gtime(val):
+		if val == -1:
+			return "NaN"
+		return time.strftime('%Y-%m-%d %H:%M',time.gmtime(val))
+	
+	c.execute("SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder")
 	r = c.fetchall()
+
+	if len(r) == 0:
+		return
+
+	print("print bookmarks")
+	maxLen = [0,0,0]
 	for line in r:
-		print(line)	
+		for i in range(1,4):
+			if i == 1:
+				maxLen[0] = max(len(line[i])-len(TOPLEVEL),maxLen[0])
+			else:
+				maxLen[i-1] = max(len(line[i]),maxLen[i-1])
+	header = "ID    FOLDER" + gs(maxLen[0],6) + "TITLE" + gs(maxLen[1],5) + "LINK" + gs(maxLen[2],4) + "LAST MODIFIED        ADDED"
+	print(header)
+	print(''.join(len(header)*["-"]))
+	for line in r:
+		folder = line[1].replace(SEP,"/")
+		folder = folder.replace(TOPLEVEL+"/","")
+		print(str(line[0]) + gs(4,0) + folder + gs(maxLen[0],len(folder)) + line[2] + gs(maxLen[1],len(line[2]))+ line[3] + gs(maxLen[2],len(line[3]))+ gtime(line[4]) + gs(4,0) + gtime(line[5]))
+
+
 
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
