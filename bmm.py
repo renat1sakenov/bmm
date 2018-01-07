@@ -138,7 +138,20 @@ def delete_folder(name):
 			
 
 def delete(search):
-	pass
+	r = searchterm_result(search)
+	if r == None or len(r) == 0:
+		print("No matching items found")
+		return
+	print_result(r)
+	while True:
+		answer = input("Are you sure you want to delete these items? (y/n) ")
+		if answer == 'y':
+			c.execute("DELETE FROM item WHERE title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder IN (SELECT id FROM folder WHERE folder.name LIKE '%"+search+"%')")
+			con.commit()
+			print("bookmarks deleted")
+			return
+		elif answer == 'n':
+			return
 
 
 if __name__ == "__main__":
@@ -193,8 +206,8 @@ if __name__ == "__main__":
 
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
-	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(100), added INT, last_modified INT, title VARCHAR(100), FOREIGN KEY(folder) REFERENCES folder(id)) ')
-	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(100), toolbar INT)')
+	c.execute('CREATE TABLE IF NOT EXISTS item (id INT PRIMARY KEY NOT NULL, folder INT, link VARCHAR(250), added INT, last_modified INT, title VARCHAR(250), FOREIGN KEY(folder) REFERENCES folder(id)) ')
+	c.execute('CREATE TABLE IF NOT EXISTS folder (id INT PRIMARY KEY, name VARCHAR(250), toolbar INT)')
 	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
 	if c.fetchone() == None:
 		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\",0)')		
@@ -223,6 +236,10 @@ if __name__ == "__main__":
 			except:
 				print("Invalid or empty file")
 				sys.exit() 
+
+			#counterjust for user information
+			folder_counter = 0
+			item_counter = 0
 		
 			folder_list = {}
 			for x in folders:
@@ -243,6 +260,7 @@ if __name__ == "__main__":
 						folder_list[fname] = folder_id
 						c.execute('INSERT INTO folder VALUES (?,?,?)',(str(folder_id),s,tb))
 						folder_id += 1
+						folder_counter += 1
 					else:
 						c.execute('SELECT id FROM folder WHERE name="'+s+'"')
 						folder_list[fname] = int(c.fetchone()[0])
@@ -269,11 +287,14 @@ if __name__ == "__main__":
 					txt = x.get_text().replace('"','\"')
 					c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(folder_fk),x['href'],str(ad),str(lm),txt))
 					item_id += 1
+					item_counter += 1
 			con.commit()
 				
 			info_file = open(INFO_PATH,"w+")
 			info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
 			info_file.close()
+
+			print("Added "+str(folder_counter)+" new folders and "+str(item_counter)+" new items.")
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
@@ -299,6 +320,6 @@ if __name__ == "__main__":
 		elif len(args.delete_param) == 1:
 			delete(args.delete_param[0])	
 		else:
-			print("wrong number of arguments applied")
+			print("wrong number of arguments applied:\n\tbmm -d <search term>\nOR\n\tbmm -d folder <folder name>")
 	else:
 		argument_parser.print_help()
