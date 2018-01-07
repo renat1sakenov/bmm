@@ -69,7 +69,7 @@ def export(efile):
 	export_file.close()
 
 
-def print_all():
+def print_bm(search = None):
 
 	def gs(l1,l2):
 		return ''.join((1+l1-l2)*[" "])
@@ -78,11 +78,15 @@ def print_all():
 		if val == -1:
 			return "NaN"
 		return time.strftime('%Y-%m-%d %H:%M',time.gmtime(val))
-	
-	c.execute("SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder")
+	query = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder"
+	if not search: 
+		c.execute(query)
+	else: 
+		c.execute(query + " AND (title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder.name LIKE '%"+search+"%')")
 	r = c.fetchall()
 
 	if len(r) == 0:
+		print("No bookmarks found.")
 		return
 
 	print("print bookmarks")
@@ -132,7 +136,7 @@ if __name__ == "__main__":
 	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
-	argument_parser.add_argument('-p',action='store_true',help='print all bookmarks')
+	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='search term',nargs='?',const='*',help='print bookmarks')
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
 	args = argument_parser.parse_args()
 
@@ -239,8 +243,11 @@ if __name__ == "__main__":
 	elif args.output_file != None:
 		export(args.output_file) 
 	# print bookmarks
-	elif args.p:
-		print_all()
+	elif args.print_param != None:
+		if args.print_param == '*':
+			print_bm()
+		else:
+			print_bm(args.print_param)	
 	elif args.D:
 		try:
 			os.remove(DB_PATH)
