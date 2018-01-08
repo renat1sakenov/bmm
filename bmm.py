@@ -7,7 +7,6 @@ import os
 import time
 from bs4 import BeautifulSoup
 
-
 def export(efile):
 	def new_folder(name,toolbar=0):
 		return ('<DT><H3>'+name+'</H3>\n<DL><p>\n' if (toolbar == 0) else '<DT><H3 PERSONAL_TOOLBAR_FOLDER=\"true\">'+name+'</H3>\n<DL><p>\n')
@@ -33,6 +32,8 @@ def export(efile):
 		<H1>Bookmarks</H1>\r
 		<DL><p>\r"""
 	content = ""	
+
+	recently_bookmarked = "<DT><A HREF=place:folder=BOOKMARKS_MENU&folder=UNFILED_BOOKMARKS&folder=TOOLBAR&queryType=1&sort=12&maxResults=10&excludeQueries=1>Recently bookmarked</A>"
 	
 	counter = 0
 	cs = (TOPLEVEL,0)
@@ -65,9 +66,8 @@ def export(efile):
 		content += close_folder
 		i-=1
 	content += "</DL>"
-	export_file.write(header+content)
+	export_file.write(header+recently_bookmarked+content)
 	export_file.close()
-
 
 def searchterm_result(search = None):
 	if not search: 
@@ -84,7 +84,6 @@ def query_result(query):
 		c.execute(DEFAULT_ITEM_QUERY + query)
 	r = c.fetchall()
 	return r
-	
 
 def print_result(r):
 
@@ -116,7 +115,6 @@ def print_result(r):
 		print(str(line[0]) + gs(4,0) + folder + gs(maxLen[0],len(folder)) + line[2] + gs(maxLen[1],len(line[2]))+ line[3] + gs(maxLen[2],len(line[3]))+ gtime(line[4]) + gs(4,0) + gtime(line[5]))
 
 
-
 def delete_folder(name):
 	name = name.replace("/",SEP)
 	real_name = TOPLEVEL+SEP+name
@@ -136,7 +134,6 @@ def delete_folder(name):
 		elif answer == 'n':
 			return
 			
-
 def delete(search):
 	r = searchterm_result(search)
 	if r == None or len(r) == 0:
@@ -153,6 +150,12 @@ def delete(search):
 		elif answer == 'n':
 			return
 
+def print_number():
+	c.execute('SELECT COUNT(*) FROM item')
+	count_items  = c.fetchone()[0]
+	c.execute('SELECT COUNT(*) FROM folder')
+	count_folder = c.fetchone()[0]
+	print(str(count_items) + " bookmarks, " + str(count_folder) + " folders")
 
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
@@ -180,6 +183,8 @@ if __name__ == "__main__":
 	LASTMOD = "last_modified"
 	ADDDATE = "add_date"	
 
+	SMART_BOOKMARK_TAG = "place:"
+
 
 	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
 
@@ -189,6 +194,7 @@ if __name__ == "__main__":
 	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='search term',nargs='?',const='*',help='print bookmarks')
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
 	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='search term',nargs='+',help='delete bookmarks')
+	argument_parser.add_argument('-n',action='store_true',help='print total number of folders and bookmarks')
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -237,7 +243,7 @@ if __name__ == "__main__":
 				print("Invalid or empty file")
 				sys.exit() 
 
-			#counterjust for user information
+			#counter just for user information
 			folder_counter = 0
 			item_counter = 0
 		
@@ -272,7 +278,8 @@ if __name__ == "__main__":
 
 			links = bs.find_all(LINK_TAG)
 			for x in links:
-				if "('"+x['href']+"',)" not in link_res and "place:folder" not in x['href']: #testing for now
+				if "('"+x['href']+"',)" not in link_res and not x['href'].startswith(SMART_BOOKMARK_TAG):
+	
 					folder_fk = 0	
 					p = x.parent
 					lm = ad = -1
@@ -298,10 +305,8 @@ if __name__ == "__main__":
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
-	# export file
 	elif args.output_file != None:
 		export(args.output_file) 
-	# print bookmarks
 	elif args.print_param != None:
 		if args.print_param == '*':
 			print_result(searchterm_result())
@@ -321,5 +326,7 @@ if __name__ == "__main__":
 			delete(args.delete_param[0])	
 		else:
 			print("wrong number of arguments applied:\n\tbmm -d <search term>\nOR\n\tbmm -d folder <folder name>")
+	elif args.n:
+		print_number()
 	else:
 		argument_parser.print_help()
