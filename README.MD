@@ -1,12 +1,48 @@
-usage
+# bmm - Bookmark Manager
 
--i <file>[ <file2> ...]	-	import bookmarks to database, remove duplicates
--e [<file>]				- 	export bookmarks to <file> (if not supplied to current dir as 'bookmarks-bmm.html'  
--p						- 	print all bookmarks (name,address,tags,etc...)
--v						-	version
--d <name>				-	delete <name>
--rename <name> <new>	- 	rename <name>
+## Description
 
-location
+bmm is a python script which lets you import and export bookmark.html files.
 
-~/.bmm
+## Usage
+
+```
+-i FILE
+
+		import file into the database. 
+		Duplicates won't be stored.
+		Folders with same path will be merged.
+
+-e FILE 	
+
+		Export database as html file
+
+-p [keyword]
+
+		Print all bookmarks that match the search term.
+		With no argument, all bookmarks will be printed.
+
+-d [KEYWORD | folder PATH]
+		
+		deletes all bookmarks matching keyword.
+		If the first argument is "folder", it deletes the given folder 
+
+-D		
+
+		delete all bookmarks
+
+-h 
+
+		print help
+
+-n		
+
+		print number of bookmarks and folders		
+	
+```
+
+## Dependencies:
+
+- Python 3
+- sqlite3
+- beautifulsoup4
