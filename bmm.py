@@ -124,7 +124,7 @@ def delete_folder(name):
 		return
 	print_result(r)
 	while True:
-		answer = input("Are you sure you want to delete these items? (y/n) ")
+		answer = input("Are you sure you want to delete these bookmarks? (y/n) ")
 		if answer == 'y':
 			c.execute("DELETE FROM item WHERE item.folder IN (SELECT folder.id FROM folder WHERE name = '"+real_name+"%')")
 			c.execute("DELETE FROM folder WHERE name = '"+real_name+"'")
@@ -137,11 +137,11 @@ def delete_folder(name):
 def delete(search):
 	r = searchterm_result(search)
 	if r == None or len(r) == 0:
-		print("No matching items found")
+		print("No matching bookmarks found")
 		return
 	print_result(r)
 	while True:
-		answer = input("Are you sure you want to delete these items? (y/n) ")
+		answer = input("Are you sure you want to delete these bookmarks? (y/n) ")
 		if answer == 'y':
 			c.execute("DELETE FROM item WHERE title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder IN (SELECT id FROM folder WHERE folder.name LIKE '%"+search+"%')")
 			con.commit()
@@ -184,7 +184,6 @@ if __name__ == "__main__":
 	ADDDATE = "add_date"	
 
 	SMART_BOOKMARK_TAG = "place:"
-
 
 	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
 
@@ -301,7 +300,7 @@ if __name__ == "__main__":
 			info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
 			info_file.close()
 
-			print("Added "+str(folder_counter)+" new folders and "+str(item_counter)+" new items.")
+			print("Added "+str(folder_counter)+" new folders and "+str(item_counter)+" new bookmarks.")
 		else:
 			print("Not a bookmarkfile!")
 			sys.exit()
