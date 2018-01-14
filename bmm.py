@@ -114,7 +114,7 @@ def delete_folder(name):
 		answer = input("Are you sure you want to delete these bookmarks? (y/n) ")
 		if answer == 'y':
 			c.execute("DELETE FROM item WHERE folder IN (SELECT folder.id FROM folder WHERE name LIKE '"+real_name+"%')")
-			c.execute("DELETE FROM folder WHERE name = '"+real_name+"'")
+			c.execute("DELETE FROM folder WHERE name LIKE '"+real_name+"%'")
 			con.commit()		
 			print("bookmarks deleted")
 			return
@@ -122,6 +122,16 @@ def delete_folder(name):
 			return
 			
 def delete(search):
+
+	def check_for_empty_folders():
+		c.execute("SELECT id FROM folder WHERE name LIKE '%"+search+"%'")
+		res = c.fetchall()
+		for elem in res:
+			c.execute("SELECT item.id FROM item, folder WHERE item.folder = "+str(elem[0]))
+			if c.fetchone() == None:
+				c.execute("DELETE FROM folder WHERE id = "+str(elem[0]))
+		con.commit() 
+		
 	r = searchterm_result(search)
 	if r == None or len(r) == 0:
 		print("No matching bookmarks found")
@@ -132,6 +142,7 @@ def delete(search):
 		if answer == 'y':
 			c.execute("DELETE FROM item WHERE title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder IN (SELECT id FROM folder WHERE folder.name LIKE '%"+search+"%')")
 			con.commit()
+			check_for_empty_folders()
 			print("bookmarks deleted")
 			return
 		elif answer == 'n':
