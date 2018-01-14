@@ -87,9 +87,6 @@ def query_result(query):
 
 def print_result(r):
 
-	def gs(l1,l2):
-		return ''.join((1+l1-l2)*[" "])
-
 	def gtime(val):
 		if val == -1:
 			return "NaN"
@@ -99,20 +96,10 @@ def print_result(r):
 		print("No bookmarks found.")
 		return
 
-	maxLen = [0,0,0]
-	for line in r:
-		for i in range(1,4):
-			if i == 1:
-				maxLen[0] = max(len(line[i])-len(TOPLEVEL),maxLen[0])
-			else:
-				maxLen[i-1] = max(len(line[i]),maxLen[i-1])
-	header = "ID    FOLDER" + gs(maxLen[0],6) + "TITLE" + gs(maxLen[1],5) + "LINK" + gs(maxLen[2],4) + "LAST MODIFIED        ADDED"
-	print(header)
-	print(''.join(len(header)*["-"]))
 	for line in r:
 		folder = line[1].replace(SEP,"/")
 		folder = folder.replace(TOPLEVEL+"/","")
-		print(str(line[0]) + gs(4,0) + folder + gs(maxLen[0],len(folder)) + line[2] + gs(maxLen[1],len(line[2]))+ line[3] + gs(maxLen[2],len(line[3]))+ gtime(line[4]) + gs(4,0) + gtime(line[5]))
+		print(str(line[0]) + ": " + line[2] + "\n" + line[3] + "\n" + folder + " | LM: " + str(gtime(line[4])) + " | A: " + str(gtime(line[5]))+  "\n")
 
 
 def delete_folder(name):
@@ -163,7 +150,6 @@ if __name__ == "__main__":
 	USER = getpass.getuser()
 	DIR = "/home/"+USER+"/.bmm/"
 	DB_PATH = DIR + "db"
-	#write current item and folders max id into db_index
 	INFO_PATH = DIR + "db_index" 	
 	c = None
 	con = None
@@ -187,7 +173,7 @@ if __name__ == "__main__":
 
 	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
 
-	argument_parser = argparse.ArgumentParser(description='Bookmark Manager.')
+	argument_parser = argparse.ArgumentParser(description='A simple application to import, merge, print and export bookmarks.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
 	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='search term',nargs='?',const='*',help='print bookmarks')
@@ -207,7 +193,6 @@ if __name__ == "__main__":
 		info_file.close()
 	except:
 		pass	
-
 
 	con = sqlite3.connect(DB_PATH)
 	c = con.cursor()
@@ -277,8 +262,7 @@ if __name__ == "__main__":
 
 			links = bs.find_all(LINK_TAG)
 			for x in links:
-				if "('"+x['href']+"',)" not in link_res and not x['href'].startswith(SMART_BOOKMARK_TAG):
-	
+				if "('"+x['href']+"',)" not in link_res and "(\""+x['href']+"\",)" not in link_res and not x['href'].startswith(SMART_BOOKMARK_TAG):
 					folder_fk = 0	
 					p = x.parent
 					lm = ad = -1
