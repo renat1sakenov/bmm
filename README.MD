@@ -4,6 +4,16 @@
 
 bmm is a python script which lets you import and export bookmark.html files.
 
+## Installation
+
+Clone or download this repository and run `sudo make install`
+To uninstall run `sudo make uninstall`
+
+## Dependencies:
+
+- Python3
+- beautifulsoup4
+
 ## Usage
 
 ```
@@ -40,9 +50,3 @@ bmm is a python script which lets you import and export bookmark.html files.
 		print number of bookmarks and folders		
 	
 ```
-
-## Dependencies:
-
-- Python 3
-- sqlite3
-- beautifulsoup4
