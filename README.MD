@@ -2,12 +2,13 @@
 
 ## Description
 
-bmm is a python script which lets you import and export bookmark.html files.
+bmm is a python script which lets you import and export bookmark.html files.  
+Cli tool for linux only (right now)
 
 ## Installation
 
-Clone or download this repository and run `sudo make install`
-To uninstall run `sudo make uninstall`
+Clone or download this repository and run `sudo make install`.     
+To uninstall run `sudo make uninstall`.
 
 ## Dependencies:
 

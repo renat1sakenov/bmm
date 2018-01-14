@@ -105,7 +105,7 @@ def print_result(r):
 def delete_folder(name):
 	name = name.replace("/",SEP)
 	real_name = TOPLEVEL+SEP+name
-	r = query_result("AND folder.name = '"+real_name+"'")
+	r = query_result("AND folder.name LIKE '"+real_name+"%'")
 	if r == None or len(r) == 0:
 		print("No folder found.")
 		return
@@ -113,7 +113,7 @@ def delete_folder(name):
 	while True:
 		answer = input("Are you sure you want to delete these bookmarks? (y/n) ")
 		if answer == 'y':
-			c.execute("DELETE FROM item WHERE item.folder IN (SELECT folder.id FROM folder WHERE name = '"+real_name+"%')")
+			c.execute("DELETE FROM item WHERE folder IN (SELECT folder.id FROM folder WHERE name LIKE '"+real_name+"%')")
 			c.execute("DELETE FROM folder WHERE name = '"+real_name+"'")
 			con.commit()		
 			print("bookmarks deleted")
@@ -138,9 +138,9 @@ def delete(search):
 			return
 
 def print_number():
-	c.execute('SELECT COUNT(*) FROM item')
+	c.execute('SELECT COUNT(id) FROM item')
 	count_items  = c.fetchone()[0]
-	c.execute('SELECT COUNT(*) FROM folder')
+	c.execute('SELECT COUNT(id) FROM folder')
 	count_folder = c.fetchone()[0]
 	print(str(count_items) + " bookmarks, " + str(count_folder) + " folders")
 
