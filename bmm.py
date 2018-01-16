@@ -118,16 +118,16 @@ def print_result(r):
 		print(str(line[0]) + ": " + line[2] + "\n" + line[3] + "\n" + folder + " | LM: " + str(gtime(line[4])) + " | A: " + str(gtime(line[5]))+  "\n")
 
 def delete(search):
-
-	def check_for_empty_folders():
-		c.execute("SELECT id FROM folder WHERE name LIKE '%"+search+"%'")
-		res = c.fetchall()
-		for elem in res:
-			c.execute("SELECT item.id FROM item, folder WHERE item.folder = "+str(elem[0]))
-			if c.fetchone() == None:
-				c.execute("DELETE FROM folder WHERE id = "+str(elem[0]))
-		con.commit() 
 		
+	def check_for_empty_folders():
+		c.execute("SELECT id FROM folder")
+		fids = c.fetchall()
+		for fid in fids:
+			c.execute("SELECT item.id FROM item, folder WHERE item.folder="+str(fid[0]))
+			if c.fetchone() == None:
+				c.execute("DELETE FROM folder WHERE id ="+str(fid[0]))
+		con.commit()
+
 	r = searchterm_result(search)
 	if r == None or len(r) == 0:
 		print("No matching bookmarks found")
@@ -146,9 +146,10 @@ def delete(search):
 				c.execute("DELETE FROM item WHERE link REGEXP ?",(str(search_args[1]),))
 			elif search_args[0] == "folder":
 				c.execute("DELETE FROM item WHERE folder IN (SELECT id FROM folder WHERE folder.name REGEXP ?)",(str(search_args[1]),))
-
-			con.commit()
-			check_for_empty_folders()
+				c.execute("DELETE FROM folder WHERE name REGEXP ?",(str(search_args[1]),))
+		
+			con.commit()	
+			check_for_empty_folders()	
 			print("bookmarks deleted")
 			return
 		elif answer == 'n':
