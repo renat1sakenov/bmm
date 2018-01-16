@@ -3,7 +3,7 @@
 ## Description
 
 bmm is a python script which lets you import and export bookmark.html files.  
-Cli tool for linux only (right now)
+Commandline tool for Linux.
 
 ## Installation
 
@@ -20,7 +20,7 @@ To uninstall run `sudo make uninstall`.
 ```
 -i FILE
 
-		import file into the database. 
+		import html file into the database. 
 		Duplicates won't be stored.
 		Folders with same path will be merged.
 
@@ -28,15 +28,15 @@ To uninstall run `sudo make uninstall`.
 
 		Export database as html file
 
--p [keyword]
+-p [KEYWORD | title=KEYWORD | link=KEYWORD | folder=KEYWORD]
 
-		Print all bookmarks that match the search term.
+		Print all bookmarks that match the keyword (regex expression).
 		With no argument, all bookmarks will be printed.
+        searching can be limited with "title=","link=" and "folder=" prefixes
 
--d [KEYWORD | folder PATH]
+-d KEYWORD ( KEYWORD| title=KEYWORD | link=KEYWORD | folder=KEYWORD )
 		
-		deletes all bookmarks matching keyword.
-		If the first argument is "folder", it deletes the given folder 
+		deletes all bookmarks matching keyword (regex expression) according to prefix.
 
 -D		
 

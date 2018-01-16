@@ -6,6 +6,7 @@ import getpass
 import os
 import time
 from bs4 import BeautifulSoup
+import re
 
 def export(efile):
 	def new_folder(name,toolbar=0):
@@ -72,8 +73,23 @@ def export(efile):
 def searchterm_result(search = None):
 	if not search: 
 		c.execute(DEFAULT_ITEM_QUERY)
-	else: 
-		c.execute(DEFAULT_ITEM_QUERY + " AND (title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder.name LIKE '%"+search+"%')")
+	else:
+		search_args = search.split("=")
+		
+		if len(search_args) > 2:
+			return None
+
+		if len(search_args) == 1:
+			c.execute(DEFAULT_ITEM_QUERY + " AND (title REGEXP ? OR link REGEXP ? OR folder.name REGEXP ?)",(search,search,search))
+		elif search_args[0] == 'title':
+			c.execute(DEFAULT_ITEM_QUERY + " AND title REGEXP ?",(str(search_args[1]),))
+		elif search_args[0] == 'link':
+			c.execute(DEFAULT_ITEM_QUERY + " AND link REGEXP ?",(str(search_args[1]),))
+		elif search_args[0] == 'folder':
+			c.execute(DEFAULT_ITEM_QUERY + " AND folder.name REGEXP ?",(str(search_args[1]),))
+		else:
+			return None
+
 	r = c.fetchall()
 	return r
 
@@ -92,7 +108,7 @@ def print_result(r):
 			return "NaN"
 		return time.strftime('%Y-%m-%d %H:%M',time.gmtime(val))
 
-	if len(r) == 0:
+	if r == None or len(r) == 0:
 		print("No bookmarks found.")
 		return
 
@@ -101,26 +117,6 @@ def print_result(r):
 		folder = folder.replace(TOPLEVEL+"/","")
 		print(str(line[0]) + ": " + line[2] + "\n" + line[3] + "\n" + folder + " | LM: " + str(gtime(line[4])) + " | A: " + str(gtime(line[5]))+  "\n")
 
-
-def delete_folder(name):
-	name = name.replace("/",SEP)
-	real_name = TOPLEVEL+SEP+name
-	r = query_result("AND folder.name LIKE '"+real_name+"%'")
-	if r == None or len(r) == 0:
-		print("No folder found.")
-		return
-	print_result(r)
-	while True:
-		answer = input("Are you sure you want to delete these bookmarks? (y/n) ")
-		if answer == 'y':
-			c.execute("DELETE FROM item WHERE folder IN (SELECT folder.id FROM folder WHERE name LIKE '"+real_name+"%')")
-			c.execute("DELETE FROM folder WHERE name LIKE '"+real_name+"%'")
-			con.commit()		
-			print("bookmarks deleted")
-			return
-		elif answer == 'n':
-			return
-			
 def delete(search):
 
 	def check_for_empty_folders():
@@ -140,7 +136,17 @@ def delete(search):
 	while True:
 		answer = input("Are you sure you want to delete these bookmarks? (y/n) ")
 		if answer == 'y':
-			c.execute("DELETE FROM item WHERE title LIKE '%"+search+"%' OR link LIKE '%"+search+"%' OR folder IN (SELECT id FROM folder WHERE folder.name LIKE '%"+search+"%')")
+			
+			search_args = search.split("=")
+			if len(search_args) == 1:
+				c.execute("DELETE FROM item WHERE title REGEXP ? OR link REGEXP ? OR folder IN (SELECT id FROM folder WHERE folder.name REGEXP ?)",(search,search,search))
+			elif search_args[0] == "title":
+				c.execute("DELETE FROM item WHERE title REGEXP ?",(str(search_args[1]),))
+			elif search_args[0] == "link":
+				c.execute("DELETE FROM item WHERE link REGEXP ?",(str(search_args[1]),))
+			elif search_args[0] == "folder":
+				c.execute("DELETE FROM item WHERE folder IN (SELECT id FROM folder WHERE folder.name REGEXP ?)",(str(search_args[1]),))
+
 			con.commit()
 			check_for_empty_folders()
 			print("bookmarks deleted")
@@ -154,6 +160,11 @@ def print_number():
 	c.execute('SELECT COUNT(id) FROM folder')
 	count_folder = c.fetchone()[0]
 	print(str(count_items) + " bookmarks, " + str(count_folder) + " folders")
+
+
+def regexp(expr,item):
+	reg = re.compile(expr)
+	return reg.search(item) is not None
 
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
@@ -187,9 +198,9 @@ if __name__ == "__main__":
 	argument_parser = argparse.ArgumentParser(description='A simple application to import, merge, print and export bookmarks.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
-	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='search term',nargs='?',const='*',help='print bookmarks')
+	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='keyword',nargs='?',const='*',help='print bookmarks')
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
-	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='search term',nargs='+',help='delete bookmarks')
+	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='keyword',nargs=1,help='delete bookmarks')
 	argument_parser.add_argument('-n',action='store_true',help='print total number of folders and bookmarks')
 	args = argument_parser.parse_args()
 
@@ -212,6 +223,7 @@ if __name__ == "__main__":
 	c.execute('SELECT name FROM folder WHERE name = \"'+TOPLEVEL+'\"')
 	if c.fetchone() == None:
 		c.execute('INSERT INTO folder VALUES (0,\"'+TOPLEVEL+'\",0)')		
+	con.create_function("REGEXP",2,regexp)
 	con.commit()
 
 	# read input file
@@ -314,12 +326,7 @@ if __name__ == "__main__":
 		except OSError as err:
 			print(err)
 	elif args.delete_param != None:
-		if args.delete_param[0] == "folder" and len(args.delete_param) == 2:
-			delete_folder(args.delete_param[1])
-		elif len(args.delete_param) == 1:
-			delete(args.delete_param[0])	
-		else:
-			print("wrong number of arguments applied:\n\tbmm -d <search term>\nOR\n\tbmm -d folder <folder name>")
+			delete(args.delete_param[0])
 	elif args.n:
 		print_number()
 	else:
