@@ -28,15 +28,14 @@ To uninstall run `sudo make uninstall`.
 
 		Export database as html file
 
--p [KEYWORD | title=KEYWORD | link=KEYWORD | folder=KEYWORD]
+-p [EXP | title=EXP | link=EXP | folder=EXP]
 
-		Print all bookmarks that match the keyword (regex expression).
-		With no argument, all bookmarks will be printed.
-        searching can be limited with "title=","link=" and "folder=" prefixes
+		Print all bookmarks that match the expression.
+		With no argument, all bookmarks will be printed.    
 
--d KEYWORD ( KEYWORD| title=KEYWORD | link=KEYWORD | folder=KEYWORD )
+-d EXP ( EXP | title=EXP | link=EXP | folder=EXP )
 		
-		deletes all bookmarks matching keyword (regex expression) according to prefix.
+		deletes all bookmarks matching expression.
 
 -D		
 

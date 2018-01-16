@@ -195,12 +195,18 @@ if __name__ == "__main__":
 
 	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
 
+	h1 = """print bookmarks matching to the expression.
+    	expression can be: exp | title=exp | link=exp | folder=exp. No argument: print everything."""
+
+	h2 = """delete all bookmarks matching the expression.
+		 expression can be: exp | title=exp | link=exp"""
+
 	argument_parser = argparse.ArgumentParser(description='A simple application to import, merge, print and export bookmarks.')
 	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
 	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
-	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='keyword',nargs='?',const='*',help='print bookmarks')
+	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='expression',nargs='?',const='*',help= h1)
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
-	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='keyword',nargs=1,help='delete bookmarks')
+	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='expression',nargs=1,help= h2)
 	argument_parser.add_argument('-n',action='store_true',help='print total number of folders and bookmarks')
 	args = argument_parser.parse_args()
 
