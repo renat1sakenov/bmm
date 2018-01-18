@@ -34,7 +34,7 @@ def export(efile):
 		<DL><p>\r"""
 	content = ""	
 
-	recently_bookmarked = "<DT><A HREF=place:folder=BOOKMARKS_MENU&folder=UNFILED_BOOKMARKS&folder=TOOLBAR&queryType=1&sort=12&maxResults=10&excludeQueries=1>Recently bookmarked</A>"
+	recently_bookmarked = "<DT><A HREF=place:folder=BOOKMARKS_MENU&folder=UNFILED_BOOKMARKS&folder=TOOLBAR&queryType=1&sort=12&maxResults=10&excludeQueries=1>Recently bookmarked</A>\n"
 	
 	counter = 0
 	cs = (TOPLEVEL,0)
@@ -47,6 +47,9 @@ def export(efile):
 		if len(r) == 0:
 			c.execute("SELECT folder.name,toolbar FROM folder WHERE folder.id ="+str(counter))
 			r = c.fetchall()
+			if len(r) == 0:
+				counter+=1 
+				continue
 			empty = True	
 		cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
 		#if one folder has finished (but the same superfolder continues), add closing tags.
