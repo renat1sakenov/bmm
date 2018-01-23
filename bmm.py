@@ -5,8 +5,8 @@ import sqlite3
 import getpass
 import os
 import time
-from bs4 import BeautifulSoup
 import re
+from bs4 import BeautifulSoup
 
 def export(efile):
 	def new_folder(name,toolbar=0):
@@ -173,8 +173,7 @@ def regexp(expr,item):
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
 	TOPLEVEL = "BMM_TOPLEVEL"
-	USER = getpass.getuser()
-	DIR = "/home/"+USER+"/.bmm/"
+	DIR = os.path.expanduser("~") + "/.bmm/"
 	DB_PATH = DIR + "db"
 	INFO_PATH = DIR + "db_index" 	
 	c = None
