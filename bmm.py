@@ -205,12 +205,12 @@ if __name__ == "__main__":
 		 expression can be: exp | title=exp | link=exp"""
 
 	argument_parser = argparse.ArgumentParser(description='A simple application to import, merge, print and export bookmarks.')
-	argument_parser.add_argument('-i',action='store',dest='input_file',metavar='input file',help='import bookmark file')
-	argument_parser.add_argument('-e',action='store',dest='output_file',metavar='output file',help='export bookmark file')
-	argument_parser.add_argument('-p',action='store',dest='print_param',metavar='expression',nargs='?',const='*',help= h1)
+	argument_parser.add_argument('-i','--import',action='store',dest='input_file',metavar='input file',help='import bookmark file')
+	argument_parser.add_argument('-e','--export',action='store',dest='output_file',metavar='output file',help='export bookmark file')
+	argument_parser.add_argument('-p','--print',action='store',dest='print_param',metavar='expression',nargs='?',const='*',help= h1)
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
-	argument_parser.add_argument('-d',action='store',dest='delete_param',metavar='expression',nargs=1,help= h2)
-	argument_parser.add_argument('-n',action='store_true',help='print total number of folders and bookmarks')
+	argument_parser.add_argument('-d','--delete',action='store',dest='delete_param',metavar='expression',nargs=1,help= h2)
+	argument_parser.add_argument('-n','--numbers',action='store_true',dest='num',help='print total number of folders and bookmarks')
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -336,7 +336,7 @@ if __name__ == "__main__":
 			print(err)
 	elif args.delete_param != None:
 			delete(args.delete_param[0])
-	elif args.n:
+	elif args.num:
 		print_number()
 	else:
 		argument_parser.print_help()
