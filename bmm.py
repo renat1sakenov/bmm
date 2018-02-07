@@ -170,6 +170,16 @@ def regexp(expr,item):
 	reg = re.compile(expr)
 	return reg.search(item) is not None
 
+def print_latest(num):
+	if not num.isdigit():
+		print("argument must be an integer!")
+		return
+	if int(num) > int(c.execute("SELECT COUNT(id) FROM item").fetchone()[0]):
+		print("argument not in valid range.")
+		return
+	c.execute(DEFAULT_ITEM_QUERY + " ORDER BY item.added DESC LIMIT " + str(num))
+	print_result(c.fetchall())
+
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
 	TOPLEVEL = "BMM_TOPLEVEL"
@@ -211,6 +221,7 @@ if __name__ == "__main__":
 	argument_parser.add_argument('-D',action='store_true',help='remove all bookmarks')
 	argument_parser.add_argument('-d','--delete',action='store',dest='delete_param',metavar='expression',nargs=1,help= h2)
 	argument_parser.add_argument('-n','--numbers',action='store_true',dest='num',help='print total number of folders and bookmarks')
+	argument_parser.add_argument('-l','--latest',action='store',dest='latest_num',metavar='num',nargs='?',const='10',help='print the last num bookmarks')
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -338,5 +349,7 @@ if __name__ == "__main__":
 			delete(args.delete_param[0])
 	elif args.num:
 		print_number()
+	elif args.latest_num:
+		print_latest(args.latest_num)
 	else:
 		argument_parser.print_help()

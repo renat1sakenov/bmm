@@ -18,35 +18,42 @@ To uninstall run `sudo make uninstall`.
 ## Usage
 
 ```
--i FILE
+-i FILE, --import FILE  
 
 		import html file into the database. 
 		Duplicates won't be stored.
 		Folders with same path will be merged.
 
--e FILE 	
+-e FILE, --export FILE   	
 
 		Export database as html file
 
--p [EXP | title=EXP | link=EXP | folder=EXP]
+-p EXP, --print EXP
 
 		Print all bookmarks that match the expression.
-		With no argument, all bookmarks will be printed.    
+		With no argument, all bookmarks will be printed.
+		Can be used with title=EXP, link=EXP, folder=EXP
 
--d EXP ( EXP | title=EXP | link=EXP | folder=EXP )
+-d EXP, --delete EXP
 		
-		deletes all bookmarks matching expression.
+		deletes all bookmarks matching expression.  
+		Can be used with title=EXP, link=EXP, folder=EXP
 
--D		
+-D 		
 
 		delete all bookmarks
 
--h 
+-h, --help   
 
 		print help
 
--n		
+-n, --numbers  		
 
 		print number of bookmarks and folders		
+
+-l [NUM], --latest [NUM]  
+   
+		print the latest added NUM bookmarks
+
 	
 ```
