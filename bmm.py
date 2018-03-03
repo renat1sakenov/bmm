@@ -53,11 +53,18 @@ def export(efile):
 			empty = True	
 		cs = ((r[0][0].split(SEP)[-1],len(r[0][0].split(SEP)))) 
 		#if one folder has finished (but the same superfolder continues), add closing tags.
+		
 		if int(cs[1]) < int(old_cs[1]):
-			content += close_folder
+			i = 0
+			diff = int(old_cs[1]) - int(cs[1]) + 1
+			for i in range(diff):	
+				content += close_folder
+		if int(cs[1]) == int(old_cs[1]) and cs[0] != old_cs[0]:
+			content += close_folder 
+
 		#if one folder has finished, and another different folder continues (superfolder has closed), add closing tags aswell.
-		if int(cs[1]) <= int(old_cs[1]) and cs[0] != old_cs[0]:
-			content += close_folder
+		#if int(cs[1]) <= int(old_cs[1]) and cs[0] != old_cs[0]:
+		#	content += close_folder
 		if counter != 0: 
 			content += new_folder(cs[0],int(r[0][-1]))
 		if not empty:
@@ -258,13 +265,13 @@ if __name__ == "__main__":
 			c.execute('SELECT name FROM folder')
 			folder_res = str(c.fetchall())
 
-			bs = BeautifulSoup(bookmarkfile,'html.parser')
-			bs = str(bs)
-			for elem in to_remove_tags:
-				bs = bs.replace(elem,"")
-			bs = BeautifulSoup(bs,'html.parser')
-	
 			try:
+				bs = BeautifulSoup(bookmarkfile,'html.parser')
+				bs = str(bs)
+				for elem in to_remove_tags:
+					bs = bs.replace(elem,"")
+				bs = BeautifulSoup(bs,'html.parser')
+	
 				folders = bs.find(FOLDER_BODY).descendants
 			except:
 				print("Invalid or empty file")
