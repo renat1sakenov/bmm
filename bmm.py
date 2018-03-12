@@ -6,6 +6,7 @@ import getpass
 import os
 import time
 import re
+import json
 from bs4 import BeautifulSoup
 
 def export(efile):
@@ -212,7 +213,7 @@ if __name__ == "__main__":
 	ADDDATE = "add_date"	
 
 	SMART_BOOKMARK_TAG = "place:"
-
+	JSON_TOOLBAR = "toolbar_____"
 	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
 
 	h1 = """print bookmarks matching to the expression.
@@ -229,6 +230,7 @@ if __name__ == "__main__":
 	argument_parser.add_argument('-d','--delete',action='store',dest='delete_param',metavar='expression',nargs=1,help= h2)
 	argument_parser.add_argument('-n','--numbers',action='store_true',dest='num',help='print total number of folders and bookmarks')
 	argument_parser.add_argument('-l','--latest',action='store',dest='latest_num',metavar='num',nargs='?',const='10',help='print the last num bookmarks')
+	argument_parser.add_argument('--debug',action='store',dest='debug_arg')
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -260,11 +262,21 @@ if __name__ == "__main__":
 		except:
 			print("File '" + args.input_file +"' not found!")
 			sys.exit()
+		start_pos = bookmarkfile.tell()
+
+		c.execute('SELECT name FROM folder')
+		folder_res = str(c.fetchall())
+
+		c.execute('SELECT link FROM item')
+		link_res = str(c.fetchall())
+
+		#counter just for user information
+		folder_counter = 0
+		item_counter = 0
+		folder_list = {}
+
 		if bookmarkfile.readline() == DOCTYPE:
 			
-			c.execute('SELECT name FROM folder')
-			folder_res = str(c.fetchall())
-
 			try:
 				bs = BeautifulSoup(bookmarkfile,'html.parser')
 				bs = str(bs)
@@ -277,11 +289,6 @@ if __name__ == "__main__":
 				print("Invalid or empty file")
 				sys.exit() 
 
-			#counter just for user information
-			folder_counter = 0
-			item_counter = 0
-		
-			folder_list = {}
 			for x in folders:
 				if x.name == FOLDER_BODY and x.find_previous_sibling(H3_TAG) != None:
 					s = ""
@@ -307,9 +314,6 @@ if __name__ == "__main__":
 			con.commit()
 			folder_res = None
 
-			c.execute('SELECT link FROM item')
-			link_res = str(c.fetchall())
-
 			links = bs.find_all(LINK_TAG)
 			for x in links:
 				if "('"+x['href']+"',)" not in link_res and "(\""+x['href']+"\",)" not in link_res and not x['href'].startswith(SMART_BOOKMARK_TAG):
@@ -330,14 +334,52 @@ if __name__ == "__main__":
 					item_counter += 1
 			con.commit()
 				
-			info_file = open(INFO_PATH,"w+")
-			info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
-			info_file.close()
-
-			print("Added "+str(folder_counter)+" new folders and "+str(item_counter)+" new bookmarks.")
 		else:
-			print("Not a bookmarkfile!")
-			sys.exit()
+			bookmarkfile.seek(start_pos)
+			try:
+				json_content = json.load(bookmarkfile)
+			except:
+				print("Not a bookmarkfile!")
+				sys.exit()
+
+			def json_bookmark_parser(json_content,folders):
+				global folder_id,folder_counter,c, item_id, item_counter, folder_list
+				title = None
+				if "children" in json_content:
+					for x in json_content["children"]:
+						if "uri" not in x:
+							tb = 0
+							title = folders + SEP + x["title"]
+							if title not in folder_res:
+								if JSON_TOOLBAR in x["guid"]:
+									tb = 1
+								c.execute('INSERT INTO folder VALUES (?,?,?)',(str(folder_id),str(title),tb))	
+								folder_list[title] = folder_id
+								folder_id += 1
+								folder_counter += 1
+						json_bookmark_parser(x,(title if (title !=  None) else folders))
+				else:
+					try:
+						link = json_content["uri"]
+						if link not in link_res and folders != None:
+							title = json_content["title"]
+							ad = json_content["dateAdded"]
+							lm = json_content["lastModified"]
+							folder_fk = folder_list[folders]
+							c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(folder_fk),link,ad,lm,title))	
+							item_counter += 1
+							item_id += 1
+					except Exception as err:
+						pass
+
+			json_bookmark_parser(json_content,TOPLEVEL)
+			con.commit()	
+				
+		print("Added "+str(folder_counter)+" new folders and "+str(item_counter)+" new bookmarks.")
+		info_file = open(INFO_PATH,"w+")
+		info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
+		info_file.close()
+
 	elif args.output_file != None:
 		export(args.output_file) 
 	elif args.print_param != None:
@@ -358,5 +400,10 @@ if __name__ == "__main__":
 		print_number()
 	elif args.latest_num:
 		print_latest(args.latest_num)
+	elif args.debug_arg == "folder":
+		c.execute("SELECT * FROM folder")
+		res = c.fetchall()
+		for r in res:
+			print(str(r))
 	else:
 		argument_parser.print_help()
