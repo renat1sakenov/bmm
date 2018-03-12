@@ -255,6 +255,9 @@ if __name__ == "__main__":
 	con.create_function("REGEXP",2,regexp)
 	con.commit()
 
+	os.chmod(DB_PATH,0o640)
+	os.chmod(INFO_PATH,0o640)
+	
 	# read input file
 	if args.input_file != None:
 		try:
