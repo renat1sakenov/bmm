@@ -221,6 +221,8 @@ if __name__ == "__main__":
 	JSON_TOOLBAR = "toolbar_____"
 	DEFAULT_ITEM_QUERY = "SELECT item.id, folder.name, title, link, last_modified, added FROM folder, item  WHERE folder.id = item.folder "
 
+	VERSION = "1.0"
+
 	h1 = """print bookmarks matching to the expression.
     	expression can be: exp | title=exp | link=exp | folder=exp. No argument: print everything."""
 
@@ -235,8 +237,8 @@ if __name__ == "__main__":
 	argument_parser.add_argument('-d','--delete',action='store',dest='delete_param',metavar='expression',nargs=1,help= h2)
 	argument_parser.add_argument('-n','--numbers',action='store_true',dest='num',help='print total number of folders and bookmarks')
 	argument_parser.add_argument('-l','--latest',action='store',dest='latest_num',metavar='num',nargs='?',const='10',help='print the last num bookmarks')
-	argument_parser.add_argument('--debug',action='store',dest='debug_arg')
-	argument_parser.add_argument('-a','--add',action='store',dest='add_bm',help="Add a bookmark (title,url,path)")
+	argument_parser.add_argument('-a','--add',action='store',dest='add_bm',metavar="bookmark",help="Add a bookmark (title,url,path)")
+	argument_parser.add_argument('-v','--version',action='store_true',help="print version")
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
@@ -433,16 +435,7 @@ if __name__ == "__main__":
 		item_id += 1
 		write_info()
 		print("bookmark added")
-
-	elif args.debug_arg == "folder":
-		c.execute("SELECT * FROM folder")
-		res = c.fetchall()
-		for r in res:
-			print(str(r))
-	elif args.debug_arg == "item":
-		c.execute("SELECT * FROM item")
-		res = c.fetchall()
-		for r in res:
-			print(str(r))
+	elif args.version:
+		print(VERSION)
 	else:
 		argument_parser.print_help()
