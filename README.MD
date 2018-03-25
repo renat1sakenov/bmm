@@ -20,7 +20,7 @@ To uninstall run `sudo make uninstall`.
 ```
 -i FILE, --import FILE  
 
-		import html file into the database. 
+		import html/json file into the database. 
 		Duplicates won't be stored.
 		Folders with same path will be merged.
 
@@ -33,11 +33,13 @@ To uninstall run `sudo make uninstall`.
 		Print all bookmarks that match the expression.
 		With no argument, all bookmarks will be printed.
 		Can be used with title=EXP, link=EXP, folder=EXP
+		Example: bmm -p link=youtube
 
 -d EXP, --delete EXP
 		
 		deletes all bookmarks matching expression.  
-		Can be used with title=EXP, link=EXP, folder=EXP
+		Can be used with title=EXP, link=EXP, folder=EXP  
+		Example: bmm -d folder="trash bin"  
 
 -D 		
 
@@ -49,11 +51,15 @@ To uninstall run `sudo make uninstall`.
 
 -n, --numbers  		
 
-		print number of bookmarks and folders		
+		print number of bookmarks and folders  
 
 -l [NUM], --latest [NUM]  
    
-		print the latest added NUM bookmarks
+		print the latest added NUM bookmarks. Default is 10.  
 
+-a title,url,path , --add title,url,path
+
+		add a new bookmark using a comma-separated list  
+		example: bmm -a testname,https://www.example.com,Bookmarks/Important
 	
 ```
