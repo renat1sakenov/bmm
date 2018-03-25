@@ -188,6 +188,11 @@ def print_latest(num):
 	c.execute(DEFAULT_ITEM_QUERY + " ORDER BY item.added DESC LIMIT " + str(num))
 	print_result(c.fetchall())
 
+def write_info():
+	info_file = open(INFO_PATH,"w+")
+	info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
+	info_file.close()
+
 if __name__ == "__main__":
 	DOCTYPE = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
 	TOPLEVEL = "BMM_TOPLEVEL"
@@ -231,10 +236,12 @@ if __name__ == "__main__":
 	argument_parser.add_argument('-n','--numbers',action='store_true',dest='num',help='print total number of folders and bookmarks')
 	argument_parser.add_argument('-l','--latest',action='store',dest='latest_num',metavar='num',nargs='?',const='10',help='print the last num bookmarks')
 	argument_parser.add_argument('--debug',action='store',dest='debug_arg')
+	argument_parser.add_argument('-a','--add',action='store',dest='add_bm',help="Add a bookmark (title,url,path)")
 	args = argument_parser.parse_args()
 
 	if not os.path.exists(DIR):
 		os.mkdir(DIR)
+	os.system("touch "+ INFO_PATH)
 	try:
 		info_file = open(INFO_PATH,"r")
 		info_content = info_file.readlines()
@@ -279,7 +286,6 @@ if __name__ == "__main__":
 		folder_list = {}
 
 		if bookmarkfile.readline() == DOCTYPE:
-			
 			try:
 				bs = BeautifulSoup(bookmarkfile,'html.parser')
 				bs = str(bs)
@@ -336,7 +342,6 @@ if __name__ == "__main__":
 					item_id += 1
 					item_counter += 1
 			con.commit()
-				
 		else:
 			bookmarkfile.seek(start_pos)
 			try:
@@ -379,10 +384,7 @@ if __name__ == "__main__":
 			con.commit()	
 				
 		print("Added "+str(folder_counter)+" new folders and "+str(item_counter)+" new bookmarks.")
-		info_file = open(INFO_PATH,"w+")
-		info_file.write(str(item_id)+"\n"+str(folder_id)+"\n")	
-		info_file.close()
-
+		write_info()
 	elif args.output_file != None:
 		export(args.output_file) 
 	elif args.print_param != None:
@@ -403,8 +405,42 @@ if __name__ == "__main__":
 		print_number()
 	elif args.latest_num:
 		print_latest(args.latest_num)
+	elif args.add_bm != None:
+		params = args.add_bm.split(",")
+		if len(params) != 3:
+			print("Could not add bookmark. Provide the bookmark in comma-separated list (title,url,path) e.g.: 'test','example.com',bookmarks/important'")
+			sys.exit(1)
+		title = params[0]
+		url = params[1]
+		path = TOPLEVEL + SEP + params[2].replace("/",SEP)
+		ad = lm = time.time()
+
+		c.execute("SELECT id FROM item WHERE link='"+url+"'")
+		if c.fetchone() != None:
+			print("bookmark already exists")
+			sys.exit(0)
+
+		c.execute("SELECT id FROM folder WHERE name = '"+path+"'")
+		try:
+			res = c.fetchone()[0]
+		except:
+			c.execute('INSERT INTO folder VALUES (?,?,?)',(str(folder_id),path,0))
+			con.commit()
+			res = folder_id
+			folder_id += 1
+		c.execute('INSERT INTO item VALUES (?,?,?,?,?,?)',(str(item_id),str(res),url,ad,lm,title))	
+		con.commit()
+		item_id += 1
+		write_info()
+		print("bookmark added")
+
 	elif args.debug_arg == "folder":
 		c.execute("SELECT * FROM folder")
+		res = c.fetchall()
+		for r in res:
+			print(str(r))
+	elif args.debug_arg == "item":
+		c.execute("SELECT * FROM item")
 		res = c.fetchall()
 		for r in res:
 			print(str(r))
